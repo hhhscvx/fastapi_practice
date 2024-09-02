@@ -7,6 +7,8 @@ import uvicorn
 from core.models import Base, db_helper
 from items_views import router as items_router
 from users.views import router as users_router
+from api_v1 import router as router_v1
+from core.config import settings
 
 
 @asynccontextmanager
@@ -21,6 +23,7 @@ app = FastAPI(lifespan=lifespan)  # lifespan - настройка/запуск �
 
 app.include_router(items_router)
 app.include_router(users_router)
+app.include_router(router_v1, prefix=settings.api_v1_prefix)
 
 
 @app.get('/')
@@ -29,8 +32,8 @@ def get_number():
 
 
 @app.get('/number/')
-def get_number():
-    return {"number": randint(1, 10)}
+def get_number(max_num: int):
+    return {"number": randint(1, max_num)}
 
 
 if __name__ == "__main__":
