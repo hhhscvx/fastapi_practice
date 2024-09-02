@@ -1,7 +1,6 @@
 from random import randint
 
 from fastapi import FastAPI
-from pydantic import EmailStr, BaseModel
 import uvicorn
 
 from items_views import router as items_router
