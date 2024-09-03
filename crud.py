@@ -7,6 +7,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, selectinload
 
 from core.models import db_helper, User, Profile, Post
+from core.models.order import Order
+from core.models.product import Product
 
 
 async def create_user(session: AsyncSession, username: str) -> User:
@@ -100,14 +102,61 @@ async def get_profiles_with_users_and_users_posts(session: AsyncSession):
         print(profile.user.posts)
 
 
+async def create_order(session: AsyncSession,
+                       promocode: str | None = None) -> Order:
+    order = Order(promocode=promocode)
+    session.add(order)
+    await session.commit()
+
+    return order
+
+
+async def create_product(session: AsyncSession,
+                         name: str,
+                         description: str,
+                         price: int) -> Product:
+    product = Product(name=name, description=description, price=price)
+    session.add(product)
+    await session.commit()
+
+    return product
+
+
 async def main():
     async with db_helper.session_factory() as session:  # тут можно делать че угодно с базой, создавать, выбирать и т.д.
-        user_sam = await get_user_by_username(session, username="sam")
-        user_john = await get_user_by_username(session, username="john")
+        order1 = await create_order(session)
+        order_promo = await create_order(session, promocode="VESNA")
 
-        # await create_posts(session, user_sam, 'govnojopa', 'celerybroker')
-        # await create_posts(session, user_john, 'fastapi VS django', 'Backend > Frontend')
-        await get_profiles_with_users_and_users_posts(session)
+        mouse = await create_product(session,
+                                     "Mouse Logitech G102",
+                                     description="Best mouse",
+                                     price=2100)
+
+        keyboard = await create_product(session,
+                                        "Keyboard Logitech G502",
+                                        description="Takoe sebe",
+                                        price=5000)
+
+        display = await create_product(session,
+                                       "Office display",
+                                       description="Imba for films",
+                                       price=2000)
+
+        order1 = await session.scalar(
+            select(Order).where(Order.id == order1.id
+                                ).options(selectinload(Order.products))
+        )
+
+        order_promo = await session.scalar(
+            select(Order).where(Order.id == order_promo.id
+                                ).options(selectinload(Order.products))
+        )
+
+        order1.products.append(mouse)
+        order1.products.append(keyboard)
+        order_promo.products = [keyboard, display]
+
+        await session.commit()
 
 
 if __name__ == "__main__":
