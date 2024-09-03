@@ -14,3 +14,9 @@ class Post(UserRelationMixin, Base):
         default="",  # дефолт значение, если создаем через алхимию
         server_default=""  # дефолт значение, даже если создадим через базу
     )
+
+    def __str__(self) -> str:
+        return f'{self.__class__.__name__}(title={self.title}, body={self.body}, user_username={self.user.username})'
+
+    def __repr__(self) -> str:
+        return str(self)
