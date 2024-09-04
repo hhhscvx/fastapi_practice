@@ -1,7 +1,7 @@
 from typing import Annotated
 import secrets
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Header, status
 from fastapi.security import (HTTPBasic,  # проверка авторизован ли request.user
                               HTTPBasicCredentials)  # Pydantic: username, password
 
@@ -36,7 +36,7 @@ usernames_to_passwords = {
 
 def get_auth_user_username(
         credentials: Annotated[HTTPBasicCredentials, Depends(security)]
-):
+) -> str:
     unauthed_exc = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                  detail="Invalid username or password",
                                  headers={"WWW-Authenticate": "Basic"})
@@ -62,4 +62,34 @@ def demo_basic_auth_username(
     return {
         "message": "Hi!",
         "username": auth_username
+    }
+
+
+"""Token-Authorization"""
+
+static_auth_token_to_username = {
+    "XGwj645nfVNGV9wVBE": "фвьшт",
+    "35vLuHVhWmtYsegHFD": "hhhscvx"
+}
+
+
+def get_username_by_static_auth_token(
+        static_token: str = Header(alias="x-auth-token")  # В x-auth-token надо будет передать токен
+) -> str:
+    if username := static_auth_token_to_username.get(static_token):
+        return username
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid Token",
+    )
+
+
+@router.get('/some-http-header-auth/')
+def demo_auth_some_http_header(
+    username: str = Depends(get_username_by_static_auth_token)
+):
+    return {
+        "message": f"Hi, {username}",
+        "username": username
     }
