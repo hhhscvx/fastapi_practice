@@ -3,8 +3,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
-from .order_product_association import order_product_association_table
 from .product import Product
+from .order_product_association import OrderProductAssociation
 
 
 class Order(Base):
@@ -15,5 +15,9 @@ class Order(Base):
     )
 
     products: Mapped[list["Product"]] = relationship(
-        secondary=order_product_association_table, back_populates="orders"
+        secondary="order_product_association", back_populates="orders"
+    )
+
+    products_details: Mapped[list['OrderProductAssociation']] = relationship(
+        back_populates="order"
     )

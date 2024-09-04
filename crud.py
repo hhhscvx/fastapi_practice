@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from core.models import db_helper, User, Profile, Post
 from core.models.order import Order
+from core.models.order_product_association import OrderProductAssociation
 from core.models.product import Product
 
 
@@ -122,41 +123,37 @@ async def create_product(session: AsyncSession,
     return product
 
 
+async def get_order_with_products_assoc(session: AsyncSession) -> list["Order"]:
+    stmt = (
+        select(Order)
+        .options(selectinload(Order.products_details)  # OrderAssociation.
+                 .joinedload(OrderProductAssociation.product)).order_by(Order.id))
+    orders = await session.scalars(stmt)
+
+    return list(orders)
+
+
+async def create_gift_product_to_existing_orders(session: AsyncSession):
+    orders = await get_order_with_products_assoc(session)
+    product_gift = await create_product(
+        session,
+        name="Gift",
+        description="HUetaaaa",
+        price=0
+    )
+    for order in orders:
+        order.products_details.append(OrderProductAssociation(
+            count=1,
+            unit_price=0,
+            product=product_gift
+        ))
+
+    await session.commit()
+
+
 async def main():
     async with db_helper.session_factory() as session:  # тут можно делать че угодно с базой, создавать, выбирать и т.д.
-        order1 = await create_order(session)
-        order_promo = await create_order(session, promocode="VESNA")
-
-        mouse = await create_product(session,
-                                     "Mouse Logitech G102",
-                                     description="Best mouse",
-                                     price=2100)
-
-        keyboard = await create_product(session,
-                                        "Keyboard Logitech G502",
-                                        description="Takoe sebe",
-                                        price=5000)
-
-        display = await create_product(session,
-                                       "Office display",
-                                       description="Imba for films",
-                                       price=2000)
-
-        order1 = await session.scalar(
-            select(Order).where(Order.id == order1.id
-                                ).options(selectinload(Order.products))
-        )
-
-        order_promo = await session.scalar(
-            select(Order).where(Order.id == order_promo.id
-                                ).options(selectinload(Order.products))
-        )
-
-        order1.products.append(mouse)
-        order1.products.append(keyboard)
-        order_promo.products = [keyboard, display]
-
-        await session.commit()
+        ...
 
 
 if __name__ == "__main__":
