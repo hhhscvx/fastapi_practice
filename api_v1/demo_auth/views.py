@@ -1,7 +1,9 @@
+from time import time
 from typing import Annotated
 import secrets
+import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Header, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Header, Response, status
 from fastapi.security import (HTTPBasic,  # проверка авторизован ли request.user
                               HTTPBasicCredentials)  # Pydantic: username, password
 
@@ -92,4 +94,53 @@ def demo_auth_some_http_header(
     return {
         "message": f"Hi, {username}",
         "username": username
+    }
+
+
+"""Cookie авторизация"""
+
+COOKIES: dict[str, dict] = {}
+SESSION_ID_KEY = "web-app-session-id"
+
+
+def _generate_session_id() -> str:
+    return uuid.uuid4().hex
+
+
+def _get_session_data(
+        session_id: str = Cookie(alias=SESSION_ID_KEY)
+):
+    if session_id not in COOKIES:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="not authenticated"
+        )
+
+    return COOKIES[session_id]
+
+
+@router.post('/login-cookie/')
+def demo_auth_login_set_cookie(
+    response: Response,
+    auth_username: str = Depends(get_auth_user_username)
+):
+    session_id = _generate_session_id()
+    COOKIES[session_id] = {
+        "username": auth_username,
+        "login_at": int(time())
+    }
+
+    response.set_cookie(SESSION_ID_KEY, session_id)
+    return {"result": "ok"}
+
+
+@router.get('/check-cookie/')
+def demo_auth_check_cookie(
+    user_session_data: dict = Depends(_get_session_data)
+):
+    username = user_session_data["username"]
+    return {
+        "message": f"Hello, {username}!",
+        "username": username,
+        **user_session_data
     }
