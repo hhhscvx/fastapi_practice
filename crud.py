@@ -6,10 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, selectinload
 
-from core.models import db_helper, User, Profile, Post
-from core.models.order import Order
-from core.models.order_product_association import OrderProductAssociation
-from core.models.product import Product
+from core.models import db_helper, User, Profile, Post, Product, Order, OrderProductAssociation
 
 
 async def create_user(session: AsyncSession, username: str) -> User:
